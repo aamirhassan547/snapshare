@@ -1,0 +1,242 @@
+﻿{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Upload Video - SnapShare{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0 rounded-3 overflow-hidden">
+                <div class="card-header bg-gradient-primary text-white py-4">
+                    <h2 class="mb-0"><i class="fas fa-upload me-2"></i>Upload Your Video</h2>
+                    <p class="mb-0 mt-2 text-light opacity-75">Share your content with the world</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate id="videoUploadForm">
+                        {% csrf_token %}
+                        
+                        <!-- Title -->
+                        <div class="mb-4 position-relative">
+                            <label for="{{ form.title.id_for_label }}" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                            {% render_field form.title class="form-control form-control-lg rounded-3 shadow-sm" placeholder="Enter a captivating video title" %}
+                            <div class="invalid-feedback">
+                                Please provide a video title (max 100 characters).
+                            </div>
+                            <small class="text-muted mt-1 d-block">Make it catchy! Max 100 characters.</small>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">Description</label>
+                            {% render_field form.description class="form-control rounded-3 shadow-sm" rows="4" placeholder="Describe your video in detail" %}
+                            <small class="text-muted mt-1 d-block">Tell viewers what your video is about.</small>
+                        </div>
+                        
+                        <!-- File Uploads -->
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.video_file.id_for_label }}" class="form-label fw-semibold">Video File <span class="text-danger">*</span></label>
+                                {% render_field form.video_file class="form-control rounded-3 shadow-sm" accept="video/mp4,video/webm,video/mov" %}
+                                <div class="invalid-feedback">
+                                    Please select a valid video file (MP4, WebM, MOV, max 500MB).
+                                </div>
+                                <small class="text-muted mt-1 d-block">Supported formats: MP4, WebM, MOV (max 500MB)</small>
+                                <div class="progress mt-2 d-none" id="videoProgress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;" id="videoProgressBar"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.thumbnail.id_for_label }}" class="form-label fw-semibold">Thumbnail</label>
+                                {% render_field form.thumbnail class="form-control rounded-3 shadow-sm" accept="image/jpeg,image/png" %}
+                                <div class="invalid-feedback">
+                                    Please select a valid image file (JPEG, PNG, max 5MB).
+                                </div>
+                                <small class="text-muted mt-1 d-block">Recommended size: 1280x720 pixels (JPEG/PNG, max 5MB)</small>
+                                <div class="thumbnail-preview mt-2 d-none">
+                                    <img id="thumbnailPreviewImg" class="img-fluid rounded-3" style="max-height: 100px;" alt="Thumbnail Preview">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Publisher and Producer -->
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.publisher.id_for_label }}" class="form-label fw-semibold">Publisher</label>
+                                {% render_field form.publisher class="form-control rounded-3 shadow-sm" placeholder="Enter publisher name" %}
+                                <small class="text-muted mt-1 d-block">Who is publishing this video?</small>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.producer.id_for_label }}" class="form-label fw-semibold">Producer</label>
+                                {% render_field form.producer class="form-control rounded-3 shadow-sm" placeholder="Enter producer name" %}
+                                <small class="text-muted mt-1 d-block">Who produced this video?</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Genre and Age Rating -->
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.genre.id_for_label }}" class="form-label fw-semibold">Genre</label>
+                                {% render_field form.genre class="form-select rounded-3 shadow-sm" %}
+                                <small class="text-muted mt-1 d-block">Select the video's genre.</small>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label for="{{ form.age_rating.id_for_label }}" class="form-label fw-semibold">Age Rating</label>
+                                {% render_field form.age_rating class="form-select rounded-3 shadow-sm" %}
+                                <small class="text-muted mt-1 d-block">Select appropriate age rating.</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary btn-lg py-2 px-4 me-md-2" id="submitButton">
+                                <i class="fas fa-upload me-2"></i>Upload Video
+                            </button>
+                            <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-lg py-2 px-4">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #007bff, #00b7eb);
+}
+.form-control, .form-select {
+    transition: all 0.3s ease;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+}
+.btn-primary {
+    background: linear-gradient(45deg, #007bff, #00b7eb);
+    border: none;
+    transition: all 0.3s ease;
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.btn-outline-secondary {
+    transition: all 0.3s ease;
+}
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+}
+.card {
+    transition: transform 0.3s ease;
+}
+.card:hover {
+    transform: translateY(-5px);
+}
+.thumbnail-preview img {
+    object-fit: cover;
+    max-width: 100%;
+}
+</style>
+
+<!-- Enhanced JavaScript -->
+<script>
+(function() {
+    'use strict';
+
+    // Form validation
+    const form = document.getElementById('videoUploadForm');
+    const videoInput = document.querySelector('#{{ form.video_file.id_for_label }}');
+    const thumbnailInput = document.querySelector('#{{ form.thumbnail.id_for_label }}');
+    const submitButton = document.getElementById('submitButton');
+    const videoProgress = document.getElementById('videoProgress');
+    const videoProgressBar = document.getElementById('videoProgressBar');
+    const thumbnailPreview = document.querySelector('.thumbnail-preview');
+    const thumbnailPreviewImg = document.getElementById('thumbnailPreviewImg');
+
+    // Bootstrap validation
+    form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    }, false);
+
+    // Video file validation
+    videoInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const validTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+        const maxSize = 500 * 1024 * 1024; // 500MB
+
+        if (file) {
+            if (!validTypes.includes(file.type)) {
+                videoInput.classList.add('is-invalid');
+                videoInput.nextElementSibling.textContent = 'Please select a valid video file (MP4, WebM, MOV).';
+                submitButton.disabled = true;
+            } else if (file.size > maxSize) {
+                videoInput.classList.add('is-invalid');
+                videoInput.nextElementSibling.textContent = 'Video file is too large (max 500MB).';
+                submitButton.disabled = true;
+            } else {
+                videoInput.classList.remove('is-invalid');
+                submitButton.disabled = false;
+                // Simulate upload progress (for demo purposes)
+                videoProgress.classList.remove('d-none');
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    videoProgressBar.style.width = progress + '%';
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => videoProgress.classList.add('d-none'), 1000);
+                    }
+                }, 300);
+            }
+        }
+    });
+
+    // Thumbnail preview and validation
+    thumbnailInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const validTypes = ['image/jpeg', 'image/png'];
+        const maxSize = 5 * 1024 * 1024; // 5MB
+
+        if (file) {
+            if (!validTypes.includes(file.type)) {
+                thumbnailInput.classList.add('is-invalid');
+                thumbnailInput.nextElementSibling.textContent = 'Please select a valid image file (JPEG, PNG).';
+                submitButton.disabled = true;
+            } else if (file.size > maxSize) {
+                thumbnailInput.classList.add('is-invalid');
+                thumbnailInput.nextElementSibling.textContent = 'Thumbnail file is too large (max 5MB).';
+                submitButton.disabled = true;
+            } else {
+                thumbnailInput.classList.remove('is-invalid');
+                submitButton.disabled = false;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    thumbnailPreview.classList.remove('d-none');
+                    thumbnailPreviewImg.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    });
+
+    // Title character limit
+    const titleInput = document.querySelector('#{{ form.title.id_for_label }}');
+    titleInput.addEventListener('input', function() {
+        if (titleInput.value.length > 100) {
+            titleInput.classList.add('is-invalid');
+            titleInput.nextElementSibling.textContent = 'Title cannot exceed 100 characters.';
+            submitButton.disabled = true;
+        } else {
+            titleInput.classList.remove('is-invalid');
+            submitButton.disabled = false;
+        }
+    });
+})();
+</script>
+{% endblock %}

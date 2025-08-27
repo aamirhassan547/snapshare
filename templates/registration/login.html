@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Login to SnapShare{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row min-vh-100">
+    <!-- Left Container - Brand Showcase -->
+    <div class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center bg-primary text-white p-5" style="background: linear-gradient(rgba(78, 115, 223, 0.9), rgba(78, 115, 223, 0.9)), url('https://images.unsplash.com/photo-1558008258-3256797b43f3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1351&q=80') center/cover;">
+      <div class="text-center animate__animated animate__fadeInLeft">
+        <i class="fas fa-camera-retro display-1 mb-4"></i>
+        <h1 class="display-4 fw-bold mb-3">Welcome to SnapShare</h1>
+        <p class="lead mb-4">The ultimate platform for sharing your favorite moments with the world</p>
+        
+        <div class="features text-start my-5">
+          <div class="d-flex align-items-center mb-3">
+            <i class="fas fa-play-circle fa-2x me-3"></i>
+            <div>
+              <h5 class="mb-1">Upload & Share Videos</h5>
+              <p class="small mb-0">Showcase your content to a global audience</p>
+            </div>
+          </div>
+          <div class="d-flex align-items-center mb-3">
+            <i class="fas fa-users fa-2x me-3"></i>
+            <div>
+              <h5 class="mb-1">Connect with Creators</h5>
+              <p class="small mb-0">Join a community of passionate video creators</p>
+            </div>
+          </div>
+          <div class="d-flex align-items-center">
+            <i class="fas fa-chart-line fa-2x me-3"></i>
+            <div>
+              <h5 class="mb-1">Track Your Performance</h5>
+              <p class="small mb-0">Get insights on your video engagement</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="testimonials mt-5">
+          <div class="card bg-transparent border-light mb-3">
+            <div class="card-body">
+              <p class="font-italic mb-3">"SnapShare helped me grow my audience and connect with other creators in ways I never imagined!"</p>
+              <div class="d-flex align-items-center">
+                <img src="https://randomuser.me/api/portraits/women/32.jpg" class="rounded-circle me-3" width="40" alt="User">
+                <div>
+                  <h6 class="mb-0">Sarah Johnson</h6>
+                  <small class="text-white-50">Travel Creator</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Container - Login Form -->
+    <div class="col-lg-6 d-flex align-items-center justify-content-center p-5 animate__animated animate__fadeIn">
+      <div class="w-100" style="max-width: 450px;">
+        <div class="text-center mb-5">
+          <i class="fas fa-camera-retro fa-3x text-primary mb-3"></i>
+          <h2 class="h3 text-gray-900">Login to Your Account</h2>
+          <p class="text-muted">Access your videos, analytics, and creator tools</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger animate__animated animate__shakeX" role="alert">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          Invalid username or password. Please try again.
+        </div>
+        {% endif %}
+
+        {% if next %}
+          {% if user.is_authenticated %}
+          <div class="alert alert-warning" role="alert">
+            <i class="fas fa-lock me-2"></i>
+            Your account doesn't have access to this page.
+          </div>
+          {% else %}
+          <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle me-2"></i>
+            Please login to access this page.
+          </div>
+          {% endif %}
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}" class="needs-validation" novalidate>
+          {% csrf_token %}
+          
+          <div class="mb-3 form-floating">
+            {% render_field form.username class="form-control" placeholder="Username" id="id_username" required="required" %}
+            <label for="id_username"><i class="fas fa-user me-2"></i>Username or Email</label>
+            <div class="invalid-feedback">
+              Please enter your username or email.
+            </div>
+          </div>
+          
+          <div class="mb-3 form-floating">
+            {% render_field form.password class="form-control" placeholder="Password" id="id_password" required="required" %}
+            <label for="id_password"><i class="fas fa-lock me-2"></i>Password</label>
+            <div class="invalid-feedback">
+              Please enter your password.
+            </div>
+          </div>
+          
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="rememberMe" name="remember_me">
+              <label class="form-check-label" for="rememberMe">Remember me</label>
+            </div>
+          </div>
+          
+          <input type="hidden" name="next" value="{{ next }}" />
+          
+          <button type="submit" class="btn btn-primary btn-lg w-100 py-3 animate-hover mb-3">
+            <i class="fas fa-sign-in-alt me-2"></i>Login
+          </button>
+          
+          <div class="text-center small mb-4">
+            <span class="text-muted">Don't have an account?</span>
+            <a href="{% url 'signup' %}" class="text-decoration-none ms-2">Sign up now</a>
+          </div>
+          
+          <div class="divider text-center my-4 position-relative">
+            <span class="px-3 bg-white position-relative">or continue with</span>
+            <hr class="position-absolute w-100" style="top: 50%; z-index: -1;">
+          </div>
+          
+          <div class="d-flex justify-content-center gap-3 mb-4">
+            <a href="#" class="btn btn-outline-danger btn-sm animate-hover flex-grow-1">
+              <i class="fab fa-google me-2"></i>Google
+            </a>
+            <a href="#" class="btn btn-outline-primary btn-sm animate-hover flex-grow-1">
+              <i class="fab fa-facebook-f me-2"></i>Facebook
+            </a>
+            <a href="#" class="btn btn-outline-dark btn-sm animate-hover flex-grow-1">
+              <i class="fab fa-apple me-2"></i>Apple
+            </a>
+          </div>
+        </form>
+        
+        <div class="text-center small mt-4">
+          <p class="text-muted">By logging in, you agree to our <a href="#" class="text-decoration-none">Terms</a> and <a href="#" class="text-decoration-none">Privacy Policy</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Form validation
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    var forms = document.getElementsByClassName('needs-validation');
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+
+// Add focus effects
+document.querySelectorAll('.form-control').forEach(input => {
+  input.addEventListener('focus', function() {
+    this.parentElement.classList.add('animate__animated', 'animate__pulse');
+  });
+  
+  input.addEventListener('blur', function() {
+    this.parentElement.classList.remove('animate__animated', 'animate__pulse');
+  });
+});
+</script>
+{% endblock %}

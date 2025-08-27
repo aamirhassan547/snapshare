@@ -1,0 +1,11 @@
+﻿Django
+psycopg2-binary
+djangorestframework
+django-crispy-forms
+python-dotenv
+Pillow
+django-storages
+boto3
+django-widget-tweaks
+azure-storage-blob
+python-decouple

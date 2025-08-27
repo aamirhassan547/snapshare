@@ -1,0 +1,419 @@
+﻿{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block title %}Sign Up - SnapShare{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+<style>
+    :root {
+        --primary-color: #4e73df;
+        --secondary-color: #f8f9fc;
+        --accent-color: #2e59d9;
+        --text-color: #5a5c69;
+        --success-color: #1cc88a;
+        --danger-color: #e74a3b;
+        --warning-color: #f6c23e;
+    }
+    
+    body {
+        min-height: 100vh;
+        font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    
+    .brand-section {
+        background: linear-gradient(rgba(78, 115, 223, 0.9), rgba(78, 115, 223, 0.9)), 
+                    url('https://images.unsplash.com/photo-1558008258-3256797b43f3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1351&q=80') center/cover;
+        color: white;
+        padding: 3rem;
+    }
+    
+    .signup-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transform-style: preserve-3d;
+        transition: all 0.5s ease;
+        background: white;
+    }
+    
+    .signup-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        color: white;
+        text-align: center;
+        padding: 1.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+    
+    .form-control {
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d3e2;
+        transition: all 0.3s;
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+    
+    .form-select {
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d3e2;
+        transition: all 0.3s;
+    }
+    
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+    
+    .btn-signup {
+        background-color: var(--success-color);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s;
+        box-shadow: 0 4px 6px rgba(28, 200, 138, 0.3);
+    }
+    
+    .btn-signup:hover {
+        background-color: #17a673;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(28, 200, 138, 0.4);
+    }
+    
+    .password-strength {
+        height: 5px;
+        background-color: #e9ecef;
+        border-radius: 3px;
+        margin-top: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .strength-meter {
+        height: 100%;
+        width: 0;
+        transition: width 0.3s ease, background-color 0.3s ease;
+    }
+    
+    .password-requirements .requirement {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.25rem;
+        font-size: 0.8rem;
+    }
+    
+    .requirement i {
+        margin-right: 0.5rem;
+        font-size: 0.7rem;
+    }
+    
+    .valid {
+        color: var(--success-color);
+    }
+    
+    .invalid {
+        color: var(--danger-color);
+    }
+    
+    .input-icon {
+        position: absolute;
+        right: 15px;
+        top: 38px;
+        color: #6c757d;
+    }
+    
+    .feature-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .feature-icon {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row min-vh-100">
+    <!-- Left Container - Brand Showcase -->
+    <div class="col-lg-6 d-none d-lg-flex align-items-center brand-section">
+      <div class="px-5 animate__animated animate__fadeInLeft">
+        <i class="fas fa-camera-retro display-1 mb-4"></i>
+        <h1 class="display-4 fw-bold mb-4">Join Our Creative Community</h1>
+        <p class="lead mb-5">Share your videos with the world and connect with other creators</p>
+        
+        <div class="features">
+          <div class="feature-item">
+            <i class="fas fa-play-circle feature-icon"></i>
+            <div>
+              <h4>Unlimited Uploads</h4>
+              <p class="mb-0">Share as many videos as you want</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-chart-line feature-icon"></i>
+            <div>
+              <h4>Advanced Analytics</h4>
+              <p class="mb-0">Track your video performance</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-users feature-icon"></i>
+            <div>
+              <h4>Growing Community</h4>
+              <p class="mb-0">Connect with other creators</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Container - Signup Form -->
+    <div class="col-lg-6 d-flex align-items-center justify-content-center p-5">
+      <div class="w-100" style="max-width: 500px;">
+        <div class="signup-card animate__animated animate__fadeInUp">
+          <div class="card-header">
+            <h2><i class="fas fa-user-plus me-2"></i>Create Your Account</h2>
+          </div>
+          <div class="card-body p-4">
+            <form method="post" id="signupForm" novalidate enctype="multipart/form-data">
+              {% csrf_token %}
+              
+              <div class="form-group">
+                <label for="id_username" class="form-label">Username</label>
+                {% render_field form.username class="form-control" placeholder="Choose a username" %}
+                <i class="fas fa-user input-icon"></i>
+                {% if form.username.errors %}
+                  <div class="text-danger small mt-1">{{ form.username.errors|first }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="form-group">
+                <label for="id_email" class="form-label">Email Address</label>
+                {% render_field form.email class="form-control" placeholder="Your email address" %}
+                <i class="fas fa-envelope input-icon"></i>
+                {% if form.email.errors %}
+                  <div class="text-danger small mt-1">{{ form.email.errors|first }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="form-group">
+                <label for="id_password1" class="form-label">Password</label>
+                {% render_field form.password1 class="form-control" placeholder="Create a password" id="passwordField" %}
+                <i class="fas fa-lock input-icon"></i>
+                <div class="password-strength">
+                  <div class="strength-meter" id="passwordStrength"></div>
+                </div>
+                <div class="password-requirements mt-2" id="passwordRequirements">
+                  <div class="requirement" id="lengthReq">
+                    <i class="fas fa-circle invalid"></i>
+                    <span>At least 8 characters</span>
+                  </div>
+                  <div class="requirement" id="numReq">
+                    <i class="fas fa-circle invalid"></i>
+                    <span>Contains a number</span>
+                  </div>
+                  <div class="requirement" id="upperReq">
+                    <i class="fas fa-circle invalid"></i>
+                    <span>Contains uppercase letter</span>
+                  </div>
+                  <div class="requirement" id="specialReq">
+                    <i class="fas fa-circle invalid"></i>
+                    <span>Contains special character</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="id_password2" class="form-label">Confirm Password</label>
+                {% render_field form.password2 class="form-control" placeholder="Confirm your password" %}
+                <i class="fas fa-lock input-icon"></i>
+                {% if form.password2.errors %}
+                  <div class="text-danger small mt-1">{{ form.password2.errors|first }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="form-group">
+                <label for="id_role" class="form-label">Role</label>
+                {% render_field form.role class="form-select" %}
+                <i class="fas fa-user-tag input-icon"></i>
+                {% if form.role.errors %}
+                  <div class="text-danger small mt-1">{{ form.role.errors|first }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="form-group">
+                <label for="id_profile_picture" class="form-label">Profile Picture (Optional)</label>
+                {% render_field form.profile_picture class="form-control" %}
+                <i class="fas fa-image input-icon"></i>
+                {% if form.profile_picture.errors %}
+                  <div class="text-danger small mt-1">{{ form.profile_picture.errors|first }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="form-group">
+                <label for="id_bio" class="form-label">Bio (Optional)</label>
+                {% render_field form.bio class="form-control" placeholder="Tell us about yourself" %}
+                <i class="fas fa-info-circle input-icon"></i>
+                {% if form.bio.errors %}
+                  <div class="text-danger small mt-1">{{ form.bio.errors|first }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                <label class="form-check-label" for="termsCheck">
+                  I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a> and <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>
+                </label>
+              </div>
+              
+              <button type="submit" class="btn btn-signup btn-lg w-100 mb-3">
+                <i class="fas fa-user-plus me-2"></i>Create Account
+              </button>
+              
+              <div class="text-center small mt-3">
+                <p class="text-muted">By signing up, you agree to our Terms and Privacy Policy</p>
+              </div>
+            </form>
+
+            <div class="divider text-center my-4 position-relative">
+              <span class="px-3 bg-white position-relative">or sign up with</span>
+              <hr class="position-absolute w-100" style="top: 50%; z-index: -1;">
+            </div>
+
+            <div class="d-flex justify-content-center gap-3 mb-4">
+              <a href="#" class="btn btn-outline-danger btn-sm flex-grow-1">
+                <i class="fab fa-google me-2"></i>Google
+              </a>
+              <a href="#" class="btn btn-outline-primary btn-sm flex-grow-1">
+                <i class="fab fa-facebook-f me-2"></i>Facebook
+              </a>
+              <a href="#" class="btn btn-outline-dark btn-sm flex-grow-1">
+                <i class="fab fa-apple me-2"></i>Apple
+              </a>
+            </div>
+
+            <div class="text-center">
+              <p class="mb-0">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Terms Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Terms of Service</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Terms content would go here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Privacy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Privacy Policy</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Privacy policy content would go here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Password strength indicator
+    const passwordField = document.getElementById('passwordField');
+    const passwordStrength = document.getElementById('passwordStrength');
+    const requirements = {
+        lengthReq: { element: document.getElementById('lengthReq'), regex: /.{8,}/ },
+        numReq: { element: document.getElementById('numReq'), regex: /\d/ },
+        upperReq: { element: document.getElementById('upperReq'), regex: /[A-Z]/ },
+        specialReq: { element: document.getElementById('specialReq'), regex: /[^A-Za-z0-9]/ }
+    };
+
+    passwordField.addEventListener('input', function() {
+        const password = this.value;
+        let strength = 0;
+        
+        // Update requirement indicators
+        Object.entries(requirements).forEach(([key, req]) => {
+            const isValid = req.regex.test(password);
+            const icon = req.element.querySelector('i');
+            
+            if (isValid) {
+                icon.classList.remove('fa-circle', 'invalid');
+                icon.classList.add('fa-check-circle', 'valid');
+                strength += 25;
+            } else {
+                icon.classList.remove('fa-check-circle', 'valid');
+                icon.classList.add('fa-circle', 'invalid');
+            }
+        });
+        
+        // Update strength meter
+        let color;
+        if (strength < 40) {
+            color = '#dc3545'; // Red
+        } else if (strength < 70) {
+            color = '#fd7e14'; // Orange
+        } else if (strength < 90) {
+            color = '#ffc107'; // Yellow
+        } else {
+            color = '#28a745'; // Green
+        }
+        
+        passwordStrength.style.width = strength + '%';
+        passwordStrength.style.backgroundColor = color;
+    });
+
+    // Form validation for terms checkbox
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+        const termsCheckbox = document.getElementById('termsCheck');
+        if (!termsCheckbox.checked) {
+            e.preventDefault();
+            termsCheckbox.parentElement.classList.add('text-danger');
+            termsCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+</script>
+{% endblock %}
