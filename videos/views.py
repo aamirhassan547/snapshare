@@ -1,22 +1,59 @@
-﻿from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
+from datetime import datetime, timedelta
+import os
+
+from django.conf import settings
 from django.contrib import messages
-from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Avg
-from django.conf import settings
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST, require_GET
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from .models import Video, Comment, Rating
+
+from azure.storage.blob import generate_container_sas, ContainerSasPermissions
+
 from .forms import VideoUploadForm, CommentForm, RatingForm
+from .models import Video, Comment, Rating
 from users.models import CustomUser
-import os
+
 
 def home(request):
     latest_videos = Video.objects.select_related('creator').order_by('-upload_date')[:10]
     return render(request, 'videos/home.html', {'latest_videos': latest_videos})
-
+@require_GET
+@login_required
+@csrf_exempt
+def get_azure_sas_token(request):
+    """
+    Generate a SAS token for Azure Blob Storage uploads
+    """
+    try:
+        # Create a SAS token that allows writing to the container
+        sas_permissions = ContainerSasPermissions(
+            read=True, write=True, delete=False, list=True, add=True, create=True
+        )
+        
+        # Set expiry time (1 hour from now)
+        expiry_time = datetime.utcnow() + timedelta(hours=1)
+        
+        # Generate SAS token
+        sas_token = generate_container_sas(
+            account_name=settings.AZURE_ACCOUNT_NAME,
+            container_name=settings.AZURE_CONTAINER,
+            account_key=settings.AZURE_ACCOUNT_KEY,
+            permission=sas_permissions,
+            expiry=expiry_time
+        )
+        
+        return JsonResponse({'sasToken': sas_token})
+    
+    except Exception as e:
+        return JsonResponse({'error': f'Failed to generate SAS token: {str(e)}'}, status=500)
+        
 @login_required
 def upload_video(request):
     if not request.user.is_creator():
