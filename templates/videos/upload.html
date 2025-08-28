@@ -21,9 +21,9 @@
                             <label for="{{ form.title.id_for_label }}" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
                             {% render_field form.title class="form-control form-control-lg rounded-3 shadow-sm" placeholder="Enter a captivating video title" %}
                             <div class="invalid-feedback">
-                                Please provide a video title (max 100 characters).
+                                Please provide a video title (max 255 characters).
                             </div>
-                            <small class="text-muted mt-1 d-block">Make it catchy! Max 100 characters.</small>
+                            <small class="text-muted mt-1 d-block">Make it catchy! Max 255 characters.</small>
                         </div>
                         
                         <!-- Description -->
@@ -37,25 +37,27 @@
                         <div class="row">
                             <div class="col-md-6 mb-4">
                                 <label for="{{ form.video_file.id_for_label }}" class="form-label fw-semibold">Video File <span class="text-danger">*</span></label>
-                                {% render_field form.video_file class="form-control rounded-3 shadow-sm" accept="video/mp4,video/webm,video/mov" %}
-                                <div class="invalid-feedback">
-                                    Please select a valid video file (MP4, WebM, MOV, max 500MB).
+                                {% render_field form.video_file class="form-control rounded-3 shadow-sm" accept="video/mp4,video/webm,video/mov,video/avi,video/wmv" id="videoFileInput" %}
+                                <div class="invalid-feedback" id="videoFileError">
+                                    Please select a valid video file (MP4, WebM, MOV, AVI, WMV, max 500MB).
                                 </div>
-                                <small class="text-muted mt-1 d-block">Supported formats: MP4, WebM, MOV (max 500MB)</small>
+                                <small class="text-muted mt-1 d-block">Supported formats: MP4, WebM, MOV, AVI, WMV (max 500MB)</small>
                                 <div class="progress mt-2 d-none" id="videoProgress">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;" id="videoProgressBar"></div>
                                 </div>
+                                <div id="videoFileInfo" class="mt-2 small text-info d-none"></div>
                             </div>
                             <div class="col-md-6 mb-4">
                                 <label for="{{ form.thumbnail.id_for_label }}" class="form-label fw-semibold">Thumbnail</label>
-                                {% render_field form.thumbnail class="form-control rounded-3 shadow-sm" accept="image/jpeg,image/png" %}
-                                <div class="invalid-feedback">
-                                    Please select a valid image file (JPEG, PNG, max 5MB).
+                                {% render_field form.thumbnail class="form-control rounded-3 shadow-sm" accept="image/jpeg,image/png,image/webp,image/gif" id="thumbnailInput" %}
+                                <div class="invalid-feedback" id="thumbnailError">
+                                    Please select a valid image file (JPEG, PNG, WebP, GIF, max 10MB).
                                 </div>
-                                <small class="text-muted mt-1 d-block">Recommended size: 1280x720 pixels (JPEG/PNG, max 5MB)</small>
-                                <div class="thumbnail-preview mt-2 d-none">
+                                <small class="text-muted mt-1 d-block">Recommended size: 1280x720 pixels (JPEG/PNG/WebP/GIF, max 10MB)</small>
+                                <div class="thumbnail-preview mt-2 d-none" id="thumbnailPreview">
                                     <img id="thumbnailPreviewImg" class="img-fluid rounded-3" style="max-height: 100px;" alt="Thumbnail Preview">
                                 </div>
+                                <div id="thumbnailFileInfo" class="mt-2 small text-info d-none"></div>
                             </div>
                         </div>
                         
@@ -85,6 +87,12 @@
                                 {% render_field form.age_rating class="form-select rounded-3 shadow-sm" %}
                                 <small class="text-muted mt-1 d-block">Select appropriate age rating.</small>
                             </div>
+                        </div>
+                        
+                        <!-- Azure Upload Status -->
+                        <div class="alert alert-info d-none" id="azureUploadStatus">
+                            <i class="fas fa-cloud-upload-alt me-2"></i>
+                            <span id="azureStatusText">Preparing to upload to Azure Blob Storage...</span>
                         </div>
                         
                         <!-- Buttons -->
@@ -138,28 +146,67 @@
     object-fit: cover;
     max-width: 100%;
 }
+#azureUploadStatus {
+    border-left: 4px solid #0d6efd;
+}
 </style>
 
-<!-- Enhanced JavaScript -->
+<!-- Enhanced JavaScript for Azure Blob Storage -->
 <script>
 (function() {
     'use strict';
 
     // Form validation
     const form = document.getElementById('videoUploadForm');
-    const videoInput = document.querySelector('#{{ form.video_file.id_for_label }}');
-    const thumbnailInput = document.querySelector('#{{ form.thumbnail.id_for_label }}');
+    const videoInput = document.getElementById('videoFileInput');
+    const thumbnailInput = document.getElementById('thumbnailInput');
     const submitButton = document.getElementById('submitButton');
     const videoProgress = document.getElementById('videoProgress');
     const videoProgressBar = document.getElementById('videoProgressBar');
-    const thumbnailPreview = document.querySelector('.thumbnail-preview');
+    const thumbnailPreview = document.getElementById('thumbnailPreview');
     const thumbnailPreviewImg = document.getElementById('thumbnailPreviewImg');
+    const azureUploadStatus = document.getElementById('azureUploadStatus');
+    const azureStatusText = document.getElementById('azureStatusText');
+    const videoFileInfo = document.getElementById('videoFileInfo');
+    const thumbnailFileInfo = document.getElementById('thumbnailFileInfo');
+
+    // Supported file types
+    const videoTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv'];
+    const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const maxVideoSize = 500 * 1024 * 1024; // 500MB
+    const maxImageSize = 10 * 1024 * 1024;   // 10MB
+
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Show Azure status
+    function showAzureStatus(message, type = 'info') {
+        azureUploadStatus.classList.remove('d-none');
+        azureUploadStatus.className = `alert alert-${type}`;
+        azureStatusText.textContent = message;
+    }
+
+    // Hide Azure status
+    function hideAzureStatus() {
+        azureUploadStatus.classList.add('d-none');
+    }
 
     // Bootstrap validation
     form.addEventListener('submit', function(event) {
         if (form.checkValidity() === false) {
             event.preventDefault();
             event.stopPropagation();
+        } else {
+            // Show Azure upload status
+            showAzureStatus('Uploading to Azure Blob Storage...', 'info');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
         }
         form.classList.add('was-validated');
     }, false);
@@ -167,32 +214,31 @@
     // Video file validation
     videoInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
-        const validTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
-        const maxSize = 500 * 1024 * 1024; // 500MB
-
+        videoFileInfo.classList.add('d-none');
+        
         if (file) {
-            if (!validTypes.includes(file.type)) {
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const isValidType = videoTypes.includes(file.type) || ['mp4', 'webm', 'mov', 'avi', 'wmv'].includes(fileExtension);
+            
+            if (!isValidType) {
                 videoInput.classList.add('is-invalid');
-                videoInput.nextElementSibling.textContent = 'Please select a valid video file (MP4, WebM, MOV).';
+                document.getElementById('videoFileError').textContent = 'Please select a valid video file (MP4, WebM, MOV, AVI, WMV).';
                 submitButton.disabled = true;
-            } else if (file.size > maxSize) {
+            } else if (file.size > maxVideoSize) {
                 videoInput.classList.add('is-invalid');
-                videoInput.nextElementSibling.textContent = 'Video file is too large (max 500MB).';
+                document.getElementById('videoFileError').textContent = `Video file is too large (max ${formatFileSize(maxVideoSize)}).`;
                 submitButton.disabled = true;
             } else {
                 videoInput.classList.remove('is-invalid');
                 submitButton.disabled = false;
-                // Simulate upload progress (for demo purposes)
-                videoProgress.classList.remove('d-none');
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += 10;
-                    videoProgressBar.style.width = progress + '%';
-                    if (progress >= 100) {
-                        clearInterval(interval);
-                        setTimeout(() => videoProgress.classList.add('d-none'), 1000);
-                    }
-                }, 300);
+                
+                // Show file info
+                videoFileInfo.classList.remove('d-none');
+                videoFileInfo.textContent = `File: ${file.name} (${formatFileSize(file.size)})`;
+                
+                // Show Azure upload simulation
+                showAzureStatus('Video file ready for Azure Blob Storage upload', 'success');
+                setTimeout(hideAzureStatus, 3000);
             }
         }
     });
@@ -200,27 +246,38 @@
     // Thumbnail preview and validation
     thumbnailInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
-        const validTypes = ['image/jpeg', 'image/png'];
-        const maxSize = 5 * 1024 * 1024; // 5MB
-
+        thumbnailFileInfo.classList.add('d-none');
+        
         if (file) {
-            if (!validTypes.includes(file.type)) {
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const isValidType = imageTypes.includes(file.type) || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fileExtension);
+            
+            if (!isValidType) {
                 thumbnailInput.classList.add('is-invalid');
-                thumbnailInput.nextElementSibling.textContent = 'Please select a valid image file (JPEG, PNG).';
+                document.getElementById('thumbnailError').textContent = 'Please select a valid image file (JPEG, PNG, WebP, GIF).';
                 submitButton.disabled = true;
-            } else if (file.size > maxSize) {
+            } else if (file.size > maxImageSize) {
                 thumbnailInput.classList.add('is-invalid');
-                thumbnailInput.nextElementSibling.textContent = 'Thumbnail file is too large (max 5MB).';
+                document.getElementById('thumbnailError').textContent = `Thumbnail file is too large (max ${formatFileSize(maxImageSize)}).`;
                 submitButton.disabled = true;
             } else {
                 thumbnailInput.classList.remove('is-invalid');
                 submitButton.disabled = false;
+                
+                // Show file info
+                thumbnailFileInfo.classList.remove('d-none');
+                thumbnailFileInfo.textContent = `File: ${file.name} (${formatFileSize(file.size)})`;
+                
+                // Preview image
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     thumbnailPreview.classList.remove('d-none');
                     thumbnailPreviewImg.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
+                
+                showAzureStatus('Thumbnail ready for Azure Blob Storage upload', 'success');
+                setTimeout(hideAzureStatus, 3000);
             }
         }
     });
@@ -228,15 +285,20 @@
     // Title character limit
     const titleInput = document.querySelector('#{{ form.title.id_for_label }}');
     titleInput.addEventListener('input', function() {
-        if (titleInput.value.length > 100) {
+        if (titleInput.value.length > 255) {
             titleInput.classList.add('is-invalid');
-            titleInput.nextElementSibling.textContent = 'Title cannot exceed 100 characters.';
+            titleInput.nextElementSibling.textContent = 'Title cannot exceed 255 characters.';
             submitButton.disabled = true;
         } else {
             titleInput.classList.remove('is-invalid');
             submitButton.disabled = false;
         }
     });
+
+    // Show Azure info on page load
+    showAzureStatus('Files will be uploaded to Azure Blob Storage for secure cloud storage', 'info');
+    setTimeout(hideAzureStatus, 5000);
+
 })();
 </script>
 {% endblock %}

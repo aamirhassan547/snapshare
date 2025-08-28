@@ -5,11 +5,13 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Avg
+from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import Video, Comment, Rating
 from .forms import VideoUploadForm, CommentForm, RatingForm
 from users.models import CustomUser
+import os
 
 def home(request):
     latest_videos = Video.objects.select_related('creator').order_by('-upload_date')[:10]
@@ -115,6 +117,15 @@ def like_video(request, video_id):
         'total_likes': video.total_likes()
     })
 
+def get_azure_media_url(file_field):
+    """Helper function to get Azure Blob Storage URL for media files"""
+    if not file_field:
+        return None
+    
+    # If using Azure Storage, the file_field.url will already be the Azure URL
+    # due to our DEFAULT_FILE_STORAGE setting
+    return file_field.url
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticatedOrReadOnly])
 def video_list_api(request):
@@ -129,7 +140,7 @@ def video_list_api(request):
                 'id': video.id,
                 'title': video.title,
                 'description': video.description,
-                'thumbnail_url': request.build_absolute_uri(video.thumbnail.url) if video.thumbnail else None,
+                'thumbnail_url': get_azure_media_url(video.thumbnail),
                 'creator': video.creator.username,
                 'views': video.views,
                 'likes': video.total_likes(),
@@ -154,8 +165,8 @@ def video_detail_api(request, video_id):
             'id': video.id,
             'title': video.title,
             'description': video.description,
-            'video_url': request.build_absolute_uri(video.video_file.url),
-            'thumbnail_url': request.build_absolute_uri(video.thumbnail.url) if video.thumbnail else None,
+            'video_url': get_azure_media_url(video.video_file),
+            'thumbnail_url': get_azure_media_url(video.thumbnail),
             'creator': {
                 'id': video.creator.id,
                 'username': video.creator.username,
