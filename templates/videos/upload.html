@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load widget_tweaks %}
 
 {% block title %}Upload Video - SnapShare{% endblock %}
@@ -46,6 +46,7 @@
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;" id="videoProgressBar"></div>
                                 </div>
                                 <div id="videoFileInfo" class="mt-2 small text-info d-none"></div>
+                                <input type="hidden" id="azureVideoUrl" name="azure_video_url">
                             </div>
                             <div class="col-md-6 mb-4">
                                 <label for="{{ form.thumbnail.id_for_label }}" class="form-label fw-semibold">Thumbnail</label>
@@ -58,6 +59,7 @@
                                     <img id="thumbnailPreviewImg" class="img-fluid rounded-3" style="max-height: 100px;" alt="Thumbnail Preview">
                                 </div>
                                 <div id="thumbnailFileInfo" class="mt-2 small text-info d-none"></div>
+                                <input type="hidden" id="azureThumbnailUrl" name="azure_thumbnail_url">
                             </div>
                         </div>
                         
@@ -108,6 +110,9 @@
         </div>
     </div>
 </div>
+
+<!-- Azure Storage Blob SDK for direct uploads -->
+<script src="https://cdn.jsdelivr.net/npm/@azure/storage-blob@12.17.0/dist/azure-storage-blob.min.js"></script>
 
 <!-- Custom Styles -->
 <style>
@@ -169,12 +174,21 @@
     const azureStatusText = document.getElementById('azureStatusText');
     const videoFileInfo = document.getElementById('videoFileInfo');
     const thumbnailFileInfo = document.getElementById('thumbnailFileInfo');
+    const azureVideoUrl = document.getElementById('azureVideoUrl');
+    const azureThumbnailUrl = document.getElementById('azureThumbnailUrl');
 
     // Supported file types
     const videoTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv'];
     const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     const maxVideoSize = 500 * 1024 * 1024; // 500MB
     const maxImageSize = 10 * 1024 * 1024;   // 10MB
+
+    // Azure configuration (in production, these should come from your backend)
+    const AZURE = {
+        accountName: '{{ AZURE_ACCOUNT_NAME }}',
+        sasToken: '', // Will be fetched from the server
+        containerName: '{{ AZURE_CONTAINER }}'
+    };
 
     // Format file size
     function formatFileSize(bytes) {
@@ -197,18 +211,146 @@
         azureUploadStatus.classList.add('d-none');
     }
 
-    // Bootstrap validation
-    form.addEventListener('submit', function(event) {
-        if (form.checkValidity() === false) {
-            event.preventDefault();
-            event.stopPropagation();
-        } else {
-            // Show Azure upload status
-            showAzureStatus('Uploading to Azure Blob Storage...', 'info');
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+    // Get SAS token from server
+    async function getSasToken() {
+        try {
+            const response = await fetch('{% url "get_azure_sas_token" %}', {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to get SAS token');
+            }
+            
+            const data = await response.json();
+            return data.sasToken;
+        } catch (error) {
+            console.error('Error getting SAS token:', error);
+            showAzureStatus('Error connecting to server. Please try again.', 'danger');
+            throw error;
         }
-        form.classList.add('was-validated');
+    }
+
+    // Upload file to Azure Blob Storage
+    async function uploadFileToAzure(file, blobName, onProgress) {
+        try {
+            // Get SAS token if not already available
+            if (!AZURE.sasToken) {
+                AZURE.sasToken = await getSasToken();
+            }
+            
+            // Create blob service client
+            const blobService = new AzureStorage.Blob.BlobServiceClient(
+                `https://${AZURE.accountName}.blob.core.windows.net?${AZURE.sasToken}`
+            );
+            
+            // Get container client
+            const containerClient = blobService.getContainerClient(AZURE.containerName);
+            
+            // Create block blob client
+            const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+            
+            // Set up options
+            const options = {
+                blobHTTPHeaders: { blobContentType: file.type },
+                onProgress: (progress) => {
+                    if (onProgress) {
+                        const percent = (progress.loadedBytes / file.size) * 100;
+                        onProgress(percent);
+                    }
+                }
+            };
+            
+            // Upload file
+            const uploadBlobResponse = await blockBlobClient.uploadBrowserData(
+                file,
+                options
+            );
+            
+            // Return the URL of the uploaded blob
+            return `https://${AZURE.accountName}.blob.core.windows.net/${AZURE.containerName}/${blobName}`;
+            
+        } catch (error) {
+            console.error('Error uploading to Azure:', error);
+            showAzureStatus('Upload failed. Please try again.', 'danger');
+            throw error;
+        }
+    }
+
+    // Generate a unique blob name
+    function generateBlobName(file, prefix) {
+        const timestamp = new Date().getTime();
+        const randomString = Math.random().toString(36).substring(2, 15);
+        const extension = file.name.split('.').pop();
+        return `${prefix}/${timestamp}_${randomString}.${extension}`;
+    }
+
+    // Bootstrap validation
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        if (form.checkValidity() === false) {
+            event.stopPropagation();
+            form.classList.add('was-validated');
+            return;
+        }
+        
+        // Show Azure upload status
+        showAzureStatus('Uploading to Azure Blob Storage...', 'info');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+        
+        try {
+            // Upload video file
+            const videoFile = videoInput.files[0];
+            if (videoFile) {
+                const videoBlobName = generateBlobName(videoFile, 'videos');
+                showAzureStatus('Uploading video to Azure...', 'info');
+                
+                const videoUrl = await uploadFileToAzure(
+                    videoFile, 
+                    videoBlobName,
+                    (progress) => {
+                        videoProgress.classList.remove('d-none');
+                        videoProgressBar.style.width = `${progress}%`;
+                    }
+                );
+                
+                azureVideoUrl.value = videoUrl;
+                videoProgressBar.style.width = '100%';
+            }
+            
+            // Upload thumbnail file
+            const thumbnailFile = thumbnailInput.files[0];
+            if (thumbnailFile) {
+                const thumbnailBlobName = generateBlobName(thumbnailFile, 'thumbnails');
+                showAzureStatus('Uploading thumbnail to Azure...', 'info');
+                
+                const thumbnailUrl = await uploadFileToAzure(
+                    thumbnailFile, 
+                    thumbnailBlobName
+                );
+                
+                azureThumbnailUrl.value = thumbnailUrl;
+            }
+            
+            // All files uploaded, now submit the form
+            showAzureStatus('All files uploaded successfully! Saving video details...', 'success');
+            
+            // Submit the form after a short delay to show success message
+            setTimeout(() => {
+                form.submit();
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Upload failed:', error);
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-upload me-2"></i>Upload Video';
+        }
     }, false);
 
     // Video file validation
