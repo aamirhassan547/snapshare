@@ -61,17 +61,27 @@ def upload_video(request):
         return redirect('home')
    
     if request.method == 'POST':
-        form = VideoUploadForm(request.POST, request.FILES)
+        form = VideoUploadForm(request.POST)
         if form.is_valid():
             video = form.save(commit=False)
             video.creator = request.user
+            
+            # Get Azure URLs from hidden fields
+            azure_video_url = request.POST.get('azure_video_url')
+            azure_thumbnail_url = request.POST.get('azure_thumbnail_url')
+            
+            if azure_video_url:
+                video.video_file.name = azure_video_url.replace(f'https://{settings.AZURE_ACCOUNT_NAME}.blob.core.windows.net/{settings.AZURE_CONTAINER}/', '')
+            
+            if azure_thumbnail_url:
+                video.thumbnail.name = azure_thumbnail_url.replace(f'https://{settings.AZURE_ACCOUNT_NAME}.blob.core.windows.net/{settings.AZURE_CONTAINER}/', '')
+            
             video.save()
             messages.success(request, 'Video uploaded successfully!')
             return redirect('video_detail', video_id=video.id)
     else:
         form = VideoUploadForm()
     return render(request, 'videos/upload.html', {'form': form})
-
 def video_detail(request, video_id):
     video = get_object_or_404(Video.objects.select_related('creator'), id=video_id)
     
